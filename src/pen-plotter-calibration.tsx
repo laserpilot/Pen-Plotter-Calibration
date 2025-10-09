@@ -17,7 +17,7 @@ export default function PlotterCalibration() {
     manualSpacings: '0.3, 0.5, 0.7, 1.0, 1.2, 1.5, 1.8, 2.0',
     showBoundingBoxes: false,
     gradientStepLines: 4,
-    numCirclesPerRow: 3
+    lineOrientation: 'both' as 'both' | 'vertical' | 'horizontal'
   });
 
   const paperSizes = {
@@ -46,9 +46,18 @@ export default function PlotterCalibration() {
     } else {
       // Auto-generate spacings
       const spacings = [];
-      const step = (config.endSpacing - config.startSpacing) / (config.steps - 1);
-      for (let i = 0; i < config.steps; i++) {
-        spacings.push(+(config.startSpacing + step * i).toFixed(3));
+
+      // Handle case where start = end (would cause division by zero)
+      if (config.startSpacing === config.endSpacing) {
+        // Just return the single spacing value repeated
+        for (let i = 0; i < config.steps; i++) {
+          spacings.push(config.startSpacing);
+        }
+      } else {
+        const step = (config.endSpacing - config.startSpacing) / (config.steps - 1);
+        for (let i = 0; i < config.steps; i++) {
+          spacings.push(+(config.startSpacing + step * i).toFixed(3));
+        }
       }
       return spacings;
     }
@@ -108,24 +117,55 @@ export default function PlotterCalibration() {
           svg += `      <rect x="${x}" y="${currentY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
         }
 
-        // Fill with vertical lines at specified spacing
+        // Fill with lines at specified spacing
         const numLines = Math.floor(squareSize / spacing);
-        for (let i = 0; i <= numLines; i++) {
-          const lineX = x + i * spacing;
-          if (lineX <= x + squareSize) {
-            svg += `      <line x1="${lineX}" y1="${currentY}" x2="${lineX}" y2="${currentY + squareSize}"/>\n`;
+        const halfHeight = squareSize / 2;
+
+        if (config.lineOrientation === 'both') {
+          // Top half: horizontal lines
+          for (let i = 0; i <= numLines; i++) {
+            const lineY = currentY + i * spacing;
+            if (lineY <= currentY + halfHeight) {
+              svg += `      <line x1="${x}" y1="${lineY}" x2="${x + squareSize}" y2="${lineY}"/>\n`;
+            }
+          }
+
+          // Bottom half: vertical lines
+          for (let i = 0; i <= numLines; i++) {
+            const lineX = x + i * spacing;
+            if (lineX <= x + squareSize) {
+              svg += `      <line x1="${lineX}" y1="${currentY + halfHeight}" x2="${lineX}" y2="${currentY + squareSize}"/>\n`;
+            }
+          }
+
+          // Dividing line between halves (optional visual separator)
+          svg += `      <line x1="${x}" y1="${currentY + halfHeight}" x2="${x + squareSize}" y2="${currentY + halfHeight}" stroke-width="0.05" opacity="0.3"/>\n`;
+        } else if (config.lineOrientation === 'vertical') {
+          // All vertical lines
+          for (let i = 0; i <= numLines; i++) {
+            const lineX = x + i * spacing;
+            if (lineX <= x + squareSize) {
+              svg += `      <line x1="${lineX}" y1="${currentY}" x2="${lineX}" y2="${currentY + squareSize}"/>\n`;
+            }
+          }
+        } else {
+          // All horizontal lines
+          for (let i = 0; i <= numLines; i++) {
+            const lineY = currentY + i * spacing;
+            if (lineY <= currentY + squareSize) {
+              svg += `      <line x1="${x}" y1="${lineY}" x2="${x + squareSize}" y2="${lineY}"/>\n`;
+            }
           }
         }
       });
       currentY += squareSize + 2; // Move down for circles
 
       // Row 2: Concentric circles directly below matching squares (if enabled)
+      // Now matches ALL squares, not just numCirclesPerRow
       if (config.includeCircles) {
         svg += `      <!-- Circle tests -->\n`;
-        const numCircles = Math.min(config.numCirclesPerRow, spacings.length);
-        const circleSpacingsToUse = spacings.slice(0, numCircles);
 
-        circleSpacingsToUse.forEach((spacing, idx) => {
+        spacings.forEach((spacing, idx) => {
           const x = testsStartX + idx * (squareSize + gapBetweenSquares);
           const xCenter = x + squareSize/2;
           const yCenter = currentY + squareSize/2;
@@ -430,6 +470,22 @@ export default function PlotterCalibration() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium mb-1">Line Orientation</label>
+                <select
+                  value={config.lineOrientation}
+                  onChange={(e) => setConfig({...config, lineOrientation: e.target.value as 'both' | 'vertical' | 'horizontal'})}
+                  className="w-full px-3 py-2 border rounded"
+                >
+                  <option value="both">Both (H top, V bottom)</option>
+                  <option value="vertical">Vertical Only</option>
+                  <option value="horizontal">Horizontal Only</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Line direction in spacing test squares
+                </p>
+              </div>
+
               {config.includeGradient && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Lines per Gradient Step</label>
@@ -444,20 +500,6 @@ export default function PlotterCalibration() {
                   <p className="mt-1 text-xs text-gray-500">
                     Number of lines at each spacing before increment
                   </p>
-                </div>
-              )}
-
-              {config.includeCircles && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Circles per Row</label>
-                  <input
-                    type="number"
-                    value={config.numCirclesPerRow}
-                    onChange={(e) => setConfig({...config, numCirclesPerRow: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border rounded"
-                    min="1"
-                    max="6"
-                  />
                 </div>
               )}
 

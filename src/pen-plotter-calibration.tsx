@@ -12,9 +12,12 @@ export default function PlotterCalibration() {
     squareSize: 25,
     includeCircles: true,
     includeCrosshatch: true,
+    includeGradient: false,
     spacingMode: 'auto' as 'auto' | 'manual',
     manualSpacings: '0.3, 0.5, 0.7, 1.0, 1.2, 1.5, 1.8, 2.0',
-    showBoundingBoxes: false
+    showBoundingBoxes: false,
+    gradientStepLines: 4,
+    numCirclesPerRow: 3
   });
 
   const paperSizes = {
@@ -59,7 +62,8 @@ export default function PlotterCalibration() {
     const labelWidth = 45;
     const squareSize = config.squareSize;
     const gapBetweenSquares = 3;
-    
+    const gapBetweenSections = 8;
+
     let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}mm" height="${height}mm" viewBox="0 0 ${width} ${height}">
   <rect width="${width}" height="${height}" fill="white"/>
@@ -68,40 +72,31 @@ export default function PlotterCalibration() {
 
     // Title
     svg += `    <text x="${width/2}" y="${margin + 4}" font-size="4" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">Pen Calibration Test Sheet</text>\n`;
-    svg += `    <text x="${width/2}" y="${margin + 9}" font-size="2.5" text-anchor="middle" font-family="Arial, sans-serif">Line Spacing Tests (mm)</text>\n`;
+    svg += `    <text x="${width/2}" y="${margin + 9}" font-size="2.5" text-anchor="middle" font-family="Arial, sans-serif">Per-Pen Test Suite</text>\n`;
 
     let yOffset = margin + 15;
-    
-    // Column headers with spacing values
-    svg += `    <text x="${margin + labelWidth/2}" y="${yOffset}" font-size="2" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">Pen Type</text>\n`;
-    
-    spacings.forEach((spacing, idx) => {
-      const x = margin + labelWidth + 5 + idx * (squareSize + gapBetweenSquares) + squareSize/2;
-      svg += `    <text x="${x}" y="${yOffset}" font-size="1.8" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
-    });
 
-    yOffset += 5;
-
-    // Generate rows for each pen
+    // Generate rows for each pen (each row contains all tests)
     const availableHeight = height - yOffset - margin - 5;
-    const circleSection = config.includeCircles ? 35 : 0;
-    const crosshatchSection = config.includeCrosshatch ? 35 : 0;
-    const rowHeight = (availableHeight - circleSection - crosshatchSection) / config.numPens;
+    const rowHeight = availableHeight / config.numPens;
 
     for (let penIdx = 0; penIdx < config.numPens; penIdx++) {
       const rowY = yOffset + penIdx * rowHeight;
+      let xOffset = margin;
 
       // Start a group for this pen row
       svg += `    <g id="pen-row-${penIdx + 1}" data-pen="${penIdx + 1}">\n`;
 
       // Pen label box
-      svg += `      <rect x="${margin}" y="${rowY}" width="${labelWidth}" height="${squareSize}" stroke-width="0.2"/>\n`;
-      svg += `      <line x1="${margin}" y1="${rowY + 6}" x2="${margin + labelWidth}" y2="${rowY + 6}" stroke-width="0.1"/>\n`;
-      svg += `      <text x="${margin + labelWidth/2}" y="${rowY + 4}" font-size="1.5" text-anchor="middle" font-family="Arial, sans-serif">Pen ${penIdx + 1}</text>\n`;
+      svg += `      <rect x="${xOffset}" y="${rowY}" width="${labelWidth}" height="${squareSize}" stroke-width="0.2"/>\n`;
+      svg += `      <line x1="${xOffset}" y1="${rowY + 6}" x2="${xOffset + labelWidth}" y2="${rowY + 6}" stroke-width="0.1"/>\n`;
+      svg += `      <text x="${xOffset + labelWidth/2}" y="${rowY + 4}" font-size="1.5" text-anchor="middle" font-family="Arial, sans-serif">Pen ${penIdx + 1}</text>\n`;
+      xOffset += labelWidth + 5;
 
-      // Test squares with different line spacings
+      // Section 1: Discrete spacing squares
+      svg += `      <!-- Discrete spacing tests -->\n`;
       spacings.forEach((spacing, idx) => {
-        const x = margin + labelWidth + 5 + idx * (squareSize + gapBetweenSquares);
+        const x = xOffset + idx * (squareSize + gapBetweenSquares);
 
         // Square border (optional)
         if (config.showBoundingBoxes) {
@@ -116,78 +111,100 @@ export default function PlotterCalibration() {
             svg += `      <line x1="${lineX}" y1="${rowY}" x2="${lineX}" y2="${rowY + squareSize}"/>\n`;
           }
         }
+
+        // Add spacing label above square
+        svg += `      <text x="${x + squareSize/2}" y="${rowY - 1}" font-size="1.4" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
       });
+      xOffset += spacings.length * (squareSize + gapBetweenSquares) + gapBetweenSections;
+
+      // Section 2: Concentric circles (if enabled)
+      if (config.includeCircles) {
+        svg += `      <!-- Circle tests -->\n`;
+        const numCircles = Math.min(config.numCirclesPerRow, spacings.length);
+        const circleSpacingsToUse = spacings.slice(0, numCircles);
+
+        circleSpacingsToUse.forEach((spacing, idx) => {
+          const xCenter = xOffset + idx * (squareSize + gapBetweenSquares) + squareSize/2;
+          const yCenter = rowY + squareSize/2;
+
+          // Bounding box (optional)
+          if (config.showBoundingBoxes) {
+            svg += `      <rect x="${xOffset + idx * (squareSize + gapBetweenSquares)}" y="${rowY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
+          }
+
+          // Concentric circles
+          for (let r = spacing; r < squareSize/2; r += spacing) {
+            svg += `      <circle cx="${xCenter}" cy="${yCenter}" r="${r}"/>\n`;
+          }
+
+          // Label
+          svg += `      <text x="${xCenter}" y="${rowY - 1}" font-size="1.4" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
+        });
+        xOffset += numCircles * (squareSize + gapBetweenSquares) + gapBetweenSections;
+      }
+
+      // Section 3: Crosshatch (if enabled)
+      if (config.includeCrosshatch) {
+        svg += `      <!-- Crosshatch tests -->\n`;
+        const numCrosshatch = Math.min(2, spacings.length); // Fewer crosshatch to save space
+        const crosshatchSpacingsToUse = spacings.slice(0, numCrosshatch);
+
+        crosshatchSpacingsToUse.forEach((spacing, idx) => {
+          const x = xOffset + idx * (squareSize + gapBetweenSquares);
+
+          // Bounding box (optional)
+          if (config.showBoundingBoxes) {
+            svg += `      <rect x="${x}" y="${rowY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
+          }
+
+          // Draw crosshatch at 45 and -45 degrees
+          [45, -45].forEach(angleDeg => {
+            const angle = angleDeg * Math.PI / 180;
+            for (let offset = -squareSize; offset < squareSize * 2; offset += spacing) {
+              const x1 = x + offset;
+              const y1 = rowY;
+              const x2 = x + offset + squareSize * Math.tan(Math.PI/2 - angle);
+              const y2 = rowY + squareSize;
+              svg += `      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>\n`;
+            }
+          });
+
+          // Label
+          svg += `      <text x="${x + squareSize/2}" y="${rowY - 1}" font-size="1.4" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
+        });
+        xOffset += numCrosshatch * (squareSize + gapBetweenSquares) + gapBetweenSections;
+      }
+
+      // Section 4: Gradient test (if enabled)
+      if (config.includeGradient) {
+        svg += `      <!-- Gradient spacing test -->\n`;
+        const gradientWidth = squareSize * 2;
+        const gradientHeight = squareSize;
+
+        // Bounding box (optional)
+        if (config.showBoundingBoxes) {
+          svg += `      <rect x="${xOffset}" y="${rowY}" width="${gradientWidth}" height="${gradientHeight}" stroke-width="0.2"/>\n`;
+        }
+
+        // Generate gradient: start with startSpacing, gradually increase
+        let currentX = xOffset;
+        let currentSpacing = config.startSpacing;
+        const spacingIncrement = (config.endSpacing - config.startSpacing) / 20; // 20 steps across gradient
+
+        while (currentX < xOffset + gradientWidth) {
+          // Draw gradientStepLines lines at current spacing
+          for (let i = 0; i < config.gradientStepLines && currentX < xOffset + gradientWidth; i++) {
+            svg += `      <line x1="${currentX}" y1="${rowY}" x2="${currentX}" y2="${rowY + gradientHeight}"/>\n`;
+            currentX += currentSpacing;
+          }
+          currentSpacing += spacingIncrement;
+        }
+
+        // Label
+        svg += `      <text x="${xOffset + gradientWidth/2}" y="${rowY - 1}" font-size="1.4" text-anchor="middle" font-family="monospace">gradient</text>\n`;
+      }
 
       // End group for this pen row
-      svg += `    </g>\n`;
-    }
-
-    // Optional crosshatch section
-    if (config.includeCrosshatch) {
-      yOffset = yOffset + config.numPens * rowHeight + 8;
-
-      // Start group for crosshatch section
-      svg += `    <g id="crosshatch-tests">\n`;
-      svg += `      <text x="${width/2}" y="${yOffset}" font-size="2.5" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">Crosshatch Tests</text>\n`;
-      yOffset += 5;
-
-      const numCrosshatch = Math.min(8, spacings.length);
-      const crosshatchSpacing = (width - 2 * margin - labelWidth) / numCrosshatch;
-
-      spacings.slice(0, numCrosshatch).forEach((spacing, idx) => {
-        const x = margin + labelWidth + idx * crosshatchSpacing + (crosshatchSpacing - squareSize) / 2;
-        const y = yOffset;
-
-        svg += `      <text x="${x + squareSize/2}" y="${y - 1}" font-size="1.6" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}mm</text>\n`;
-
-        // Square border (optional)
-        if (config.showBoundingBoxes) {
-          svg += `      <rect x="${x}" y="${y}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
-        }
-
-        // Draw crosshatch at 45 and -45 degrees
-        [45, -45].forEach(angleDeg => {
-          const angle = angleDeg * Math.PI / 180;
-          const lineSpacing = spacing;
-          for (let offset = -squareSize; offset < squareSize * 2; offset += lineSpacing) {
-            const x1 = x + offset;
-            const y1 = y;
-            const x2 = x + offset + squareSize * Math.tan(Math.PI/2 - angle);
-            const y2 = y + squareSize;
-            svg += `      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>\n`;
-          }
-        });
-      });
-
-      // End group for crosshatch section
-      svg += `    </g>\n`;
-      yOffset += squareSize + 3;
-    }
-
-    // Optional concentric circles section
-    if (config.includeCircles) {
-      yOffset = yOffset + (config.includeCrosshatch ? 0 : config.numPens * rowHeight) + 8;
-
-      // Start group for circles section
-      svg += `    <g id="circle-tests">\n`;
-      svg += `      <text x="${width/2}" y="${yOffset}" font-size="2.5" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">Concentric Circle Tests</text>\n`;
-      yOffset += 5;
-
-      const circleSets = Math.min(6, spacings.length);
-      const circleSpacing = (width - 2 * margin - labelWidth) / circleSets;
-
-      spacings.slice(0, circleSets).forEach((spacing, idx) => {
-        const xCenter = margin + labelWidth + idx * circleSpacing + circleSpacing/2;
-        const yCenter = yOffset + 12;
-
-        svg += `      <text x="${xCenter}" y="${yOffset}" font-size="1.6" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}mm</text>\n`;
-
-        for (let r = spacing; r < 10; r += spacing) {
-          svg += `      <circle cx="${xCenter}" cy="${yCenter}" r="${r}"/>\n`;
-        }
-      });
-
-      // End group for circles section
       svg += `    </g>\n`;
     }
 
@@ -367,7 +384,71 @@ export default function PlotterCalibration() {
                 />
               </div>
 
-              <div className="pt-2 border-t space-y-2">
+              <div className="pt-2 border-t">
+                <label className="block text-sm font-medium mb-2">Test Patterns (per row)</label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.includeCircles}
+                      onChange={(e) => setConfig({...config, includeCircles: e.target.checked})}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Concentric Circles</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.includeCrosshatch}
+                      onChange={(e) => setConfig({...config, includeCrosshatch: e.target.checked})}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Crosshatch Patterns</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.includeGradient}
+                      onChange={(e) => setConfig({...config, includeGradient: e.target.checked})}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Gradient Spacing Test</span>
+                  </label>
+                </div>
+              </div>
+
+              {config.includeGradient && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Lines per Gradient Step</label>
+                  <input
+                    type="number"
+                    value={config.gradientStepLines}
+                    onChange={(e) => setConfig({...config, gradientStepLines: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border rounded"
+                    min="2"
+                    max="10"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Number of lines at each spacing before increment
+                  </p>
+                </div>
+              )}
+
+              {config.includeCircles && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Circles per Row</label>
+                  <input
+                    type="number"
+                    value={config.numCirclesPerRow}
+                    onChange={(e) => setConfig({...config, numCirclesPerRow: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border rounded"
+                    min="1"
+                    max="6"
+                  />
+                </div>
+              )}
+
+              <div className="pt-2 border-t">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -376,24 +457,6 @@ export default function PlotterCalibration() {
                     className="w-4 h-4"
                   />
                   <span className="text-sm">Show Bounding Boxes</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={config.includeCircles}
-                    onChange={(e) => setConfig({...config, includeCircles: e.target.checked})}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">Include Circle Tests</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={config.includeCrosshatch}
-                    onChange={(e) => setConfig({...config, includeCrosshatch: e.target.checked})}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">Include Crosshatch Tests</span>
                 </label>
               </div>
 
@@ -433,22 +496,22 @@ export default function PlotterCalibration() {
               <div className="p-4 bg-blue-50 rounded border border-blue-200">
                 <h3 className="font-semibold text-sm mb-2">How to Use:</h3>
                 <ul className="text-sm space-y-1 text-gray-700">
-                  <li>• Plot this sheet once</li>
-                  <li>• Test different pens in each row</li>
+                  <li>• Each row is a complete test suite for one pen</li>
+                  <li>• Plot one row at a time with each pen</li>
                   <li>• Write pen name/model in label box</li>
-                  <li>• Find where white lines disappear</li>
-                  <li>• That spacing = minimum line gap</li>
+                  <li>• All tests use the same spacing values</li>
+                  <li>• Compare squares, circles, crosshatch patterns</li>
                 </ul>
               </div>
-              
+
               <div className="p-4 bg-green-50 rounded border border-green-200">
                 <h3 className="font-semibold text-sm mb-2">What to Look For:</h3>
                 <ul className="text-sm space-y-1 text-gray-700">
-                  <li>• Leftmost squares = tight spacing</li>
-                  <li>• Note where lines start touching</li>
-                  <li>• Check if pen bleeds or feathers</li>
-                  <li>• Compare different pens side-by-side</li>
-                  <li>• Circles test curved line control</li>
+                  <li>• Discrete tests: Find where lines merge</li>
+                  <li>• Circles: Test curved line performance</li>
+                  <li>• Crosshatch: Check diagonal overlaps</li>
+                  <li>• Gradient: See continuous transition</li>
+                  <li>• Note bleeding, feathering, or gaps</li>
                 </ul>
               </div>
             </div>

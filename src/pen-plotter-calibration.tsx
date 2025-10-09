@@ -9,7 +9,7 @@ export default function PlotterCalibration() {
     endSpacing: 2.0,
     steps: 10,
     numPens: 4,
-    squareSize: 25,
+    squareSize: 10,
     includeCircles: true,
     includeCrosshatch: true,
     includeGradient: false,
@@ -82,25 +82,30 @@ export default function PlotterCalibration() {
 
     for (let penIdx = 0; penIdx < config.numPens; penIdx++) {
       const rowY = yOffset + penIdx * rowHeight;
-      let xOffset = margin;
+      let currentY = rowY;
 
       // Start a group for this pen row
       svg += `    <g id="pen-row-${penIdx + 1}" data-pen="${penIdx + 1}">\n`;
 
-      // Pen label box
-      svg += `      <rect x="${xOffset}" y="${rowY}" width="${labelWidth}" height="${squareSize}" stroke-width="0.2"/>\n`;
-      svg += `      <line x1="${xOffset}" y1="${rowY + 6}" x2="${xOffset + labelWidth}" y2="${rowY + 6}" stroke-width="0.1"/>\n`;
-      svg += `      <text x="${xOffset + labelWidth/2}" y="${rowY + 4}" font-size="1.5" text-anchor="middle" font-family="Arial, sans-serif">Pen ${penIdx + 1}</text>\n`;
-      xOffset += labelWidth + 5;
+      // Pen label box (spans full height of row)
+      const labelHeight = squareSize * 2 + 2; // Height to cover squares + circles
+      svg += `      <rect x="${margin}" y="${currentY}" width="${labelWidth}" height="${labelHeight}" stroke-width="0.2"/>\n`;
+      svg += `      <line x1="${margin}" y1="${currentY + 6}" x2="${margin + labelWidth}" y2="${currentY + 6}" stroke-width="0.1"/>\n`;
+      svg += `      <text x="${margin + labelWidth/2}" y="${currentY + 4}" font-size="1.5" text-anchor="middle" font-family="Arial, sans-serif">Pen ${penIdx + 1}</text>\n`;
 
-      // Section 1: Discrete spacing squares
+      const testsStartX = margin + labelWidth + 5;
+
+      // Row 1: Discrete spacing squares with labels above
       svg += `      <!-- Discrete spacing tests -->\n`;
       spacings.forEach((spacing, idx) => {
-        const x = xOffset + idx * (squareSize + gapBetweenSquares);
+        const x = testsStartX + idx * (squareSize + gapBetweenSquares);
+
+        // Label above square
+        svg += `      <text x="${x + squareSize/2}" y="${currentY - 1}" font-size="1.2" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
 
         // Square border (optional)
         if (config.showBoundingBoxes) {
-          svg += `      <rect x="${x}" y="${rowY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
+          svg += `      <rect x="${x}" y="${currentY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
         }
 
         // Fill with vertical lines at specified spacing
@@ -108,53 +113,51 @@ export default function PlotterCalibration() {
         for (let i = 0; i <= numLines; i++) {
           const lineX = x + i * spacing;
           if (lineX <= x + squareSize) {
-            svg += `      <line x1="${lineX}" y1="${rowY}" x2="${lineX}" y2="${rowY + squareSize}"/>\n`;
+            svg += `      <line x1="${lineX}" y1="${currentY}" x2="${lineX}" y2="${currentY + squareSize}"/>\n`;
           }
         }
-
-        // Add spacing label above square
-        svg += `      <text x="${x + squareSize/2}" y="${rowY - 1}" font-size="1.4" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
       });
-      xOffset += spacings.length * (squareSize + gapBetweenSquares) + gapBetweenSections;
+      currentY += squareSize + 2; // Move down for circles
 
-      // Section 2: Concentric circles (if enabled)
+      // Row 2: Concentric circles directly below matching squares (if enabled)
       if (config.includeCircles) {
         svg += `      <!-- Circle tests -->\n`;
         const numCircles = Math.min(config.numCirclesPerRow, spacings.length);
         const circleSpacingsToUse = spacings.slice(0, numCircles);
 
         circleSpacingsToUse.forEach((spacing, idx) => {
-          const xCenter = xOffset + idx * (squareSize + gapBetweenSquares) + squareSize/2;
-          const yCenter = rowY + squareSize/2;
+          const x = testsStartX + idx * (squareSize + gapBetweenSquares);
+          const xCenter = x + squareSize/2;
+          const yCenter = currentY + squareSize/2;
 
           // Bounding box (optional)
           if (config.showBoundingBoxes) {
-            svg += `      <rect x="${xOffset + idx * (squareSize + gapBetweenSquares)}" y="${rowY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
+            svg += `      <rect x="${x}" y="${currentY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
           }
 
           // Concentric circles
           for (let r = spacing; r < squareSize/2; r += spacing) {
             svg += `      <circle cx="${xCenter}" cy="${yCenter}" r="${r}"/>\n`;
           }
-
-          // Label
-          svg += `      <text x="${xCenter}" y="${rowY - 1}" font-size="1.4" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
         });
-        xOffset += numCircles * (squareSize + gapBetweenSquares) + gapBetweenSections;
+        currentY += squareSize + gapBetweenSections; // Move down for next section
       }
 
-      // Section 3: Crosshatch (if enabled)
+      // Row 3: Crosshatch (if enabled)
       if (config.includeCrosshatch) {
         svg += `      <!-- Crosshatch tests -->\n`;
-        const numCrosshatch = Math.min(2, spacings.length); // Fewer crosshatch to save space
+        const numCrosshatch = Math.min(4, spacings.length);
         const crosshatchSpacingsToUse = spacings.slice(0, numCrosshatch);
 
         crosshatchSpacingsToUse.forEach((spacing, idx) => {
-          const x = xOffset + idx * (squareSize + gapBetweenSquares);
+          const x = testsStartX + idx * (squareSize + gapBetweenSquares);
+
+          // Label above
+          svg += `      <text x="${x + squareSize/2}" y="${currentY - 1}" font-size="1.2" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
 
           // Bounding box (optional)
           if (config.showBoundingBoxes) {
-            svg += `      <rect x="${x}" y="${rowY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
+            svg += `      <rect x="${x}" y="${currentY}" width="${squareSize}" height="${squareSize}" stroke-width="0.2"/>\n`;
           }
 
           // Draw crosshatch at 45 and -45 degrees
@@ -162,46 +165,56 @@ export default function PlotterCalibration() {
             const angle = angleDeg * Math.PI / 180;
             for (let offset = -squareSize; offset < squareSize * 2; offset += spacing) {
               const x1 = x + offset;
-              const y1 = rowY;
+              const y1 = currentY;
               const x2 = x + offset + squareSize * Math.tan(Math.PI/2 - angle);
-              const y2 = rowY + squareSize;
+              const y2 = currentY + squareSize;
               svg += `      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>\n`;
             }
           });
-
-          // Label
-          svg += `      <text x="${x + squareSize/2}" y="${rowY - 1}" font-size="1.4" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
         });
-        xOffset += numCrosshatch * (squareSize + gapBetweenSquares) + gapBetweenSections;
+        currentY += squareSize + gapBetweenSections; // Move down for next section
       }
 
-      // Section 4: Gradient test (if enabled)
+      // Row 4: Gradient test (if enabled)
       if (config.includeGradient) {
         svg += `      <!-- Gradient spacing test -->\n`;
-        const gradientWidth = squareSize * 2;
+        const gradientWidth = Math.max(100, spacings.length * (squareSize + gapBetweenSquares));
         const gradientHeight = squareSize;
 
         // Bounding box (optional)
         if (config.showBoundingBoxes) {
-          svg += `      <rect x="${xOffset}" y="${rowY}" width="${gradientWidth}" height="${gradientHeight}" stroke-width="0.2"/>\n`;
+          svg += `      <rect x="${testsStartX}" y="${currentY}" width="${gradientWidth}" height="${gradientHeight}" stroke-width="0.2"/>\n`;
         }
 
         // Generate gradient: start with startSpacing, gradually increase
-        let currentX = xOffset;
+        let currentX = testsStartX;
         let currentSpacing = config.startSpacing;
-        const spacingIncrement = (config.endSpacing - config.startSpacing) / 20; // 20 steps across gradient
+        const totalSteps = 20;
+        const spacingIncrement = (config.endSpacing - config.startSpacing) / totalSteps;
 
-        while (currentX < xOffset + gradientWidth) {
+        // Track positions for labels
+        const labelPositions = [
+          { x: testsStartX, spacing: config.startSpacing, label: 'start' },
+          { x: testsStartX + gradientWidth/2, spacing: (config.startSpacing + config.endSpacing) / 2, label: 'mid' },
+          { x: testsStartX + gradientWidth, spacing: config.endSpacing, label: 'end' }
+        ];
+
+        while (currentX < testsStartX + gradientWidth) {
           // Draw gradientStepLines lines at current spacing
-          for (let i = 0; i < config.gradientStepLines && currentX < xOffset + gradientWidth; i++) {
-            svg += `      <line x1="${currentX}" y1="${rowY}" x2="${currentX}" y2="${rowY + gradientHeight}"/>\n`;
+          for (let i = 0; i < config.gradientStepLines && currentX < testsStartX + gradientWidth; i++) {
+            svg += `      <line x1="${currentX}" y1="${currentY}" x2="${currentX}" y2="${currentY + gradientHeight}"/>\n`;
             currentX += currentSpacing;
           }
           currentSpacing += spacingIncrement;
         }
 
-        // Label
-        svg += `      <text x="${xOffset + gradientWidth/2}" y="${rowY - 1}" font-size="1.4" text-anchor="middle" font-family="monospace">gradient</text>\n`;
+        // Add numeric labels at start, middle, and end
+        svg += `      <text x="${testsStartX}" y="${currentY - 1}" font-size="1.2" text-anchor="start" font-family="monospace">${config.startSpacing.toFixed(2)}</text>\n`;
+        svg += `      <text x="${testsStartX + gradientWidth/2}" y="${currentY - 1}" font-size="1.2" text-anchor="middle" font-family="monospace">${((config.startSpacing + config.endSpacing) / 2).toFixed(2)}</text>\n`;
+        svg += `      <text x="${testsStartX + gradientWidth}" y="${currentY - 1}" font-size="1.2" text-anchor="end" font-family="monospace">${config.endSpacing.toFixed(2)}</text>\n`;
+
+        // Label below
+        svg += `      <text x="${testsStartX + gradientWidth/2}" y="${currentY + gradientHeight + 3}" font-size="1.2" text-anchor="middle" font-family="monospace" font-style="italic">gradient</text>\n`;
       }
 
       // End group for this pen row

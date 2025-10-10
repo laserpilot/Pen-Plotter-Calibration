@@ -2,6 +2,8 @@
 
 A collection of web-based tools for calibrating and testing pen plotters.
 
+**🔗 Live Demo:** [https://laserpilot.github.io/Pen-Plotter-Calibration/](https://laserpilot.github.io/Pen-Plotter-Calibration/)
+
 ## Features
 
 ### 1. Calibration Sheet Generator ✅
@@ -27,17 +29,27 @@ Analyze existing SVG files to detect lines that are too close together.
 
 ## Getting Started
 
-### Prerequisites
+### Using the Live Demo
+
+Visit [https://laserpilot.github.io/Pen-Plotter-Calibration/](https://laserpilot.github.io/Pen-Plotter-Calibration/) - no installation required!
+
+### Running Locally
+
+#### Prerequisites
 - Node.js 18+ and npm
 
-### Installation
+#### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/laserpilot/Pen-Plotter-Calibration.git
+cd Pen-Plotter-Calibration
+
 # Install dependencies
 npm install
 ```
 
-### Running Locally
+#### Development
 
 ```bash
 # Start development server
@@ -46,7 +58,7 @@ npm run dev
 
 Then open your browser to the URL shown (typically http://localhost:5173)
 
-### Building for Production
+#### Building for Production
 
 ```bash
 # Create production build
@@ -55,6 +67,10 @@ npm run build
 # Preview production build
 npm run preview
 ```
+
+### Deployment
+
+The app automatically deploys to GitHub Pages when changes are pushed to the `main` branch via GitHub Actions.
 
 ## Usage Guide
 

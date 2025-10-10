@@ -4,21 +4,26 @@ A collection of web-based tools for calibrating and testing pen plotters.
 
 ## Features
 
-### 1. Calibration Sheet Generator
+### 1. Calibration Sheet Generator ✅
 Generate calibration test sheets to find optimal line spacing for your pens and plotter setup.
 
 - **Configurable paper sizes**: A3, A4, A5, Letter, Tabloid
 - **Multiple test patterns**: Line spacing tests, crosshatch patterns, concentric circles
 - **Adjustable parameters**: Spacing range, square size, number of test rows
 - **SVG export**: Download ready-to-plot calibration sheets
+- **Single-line fonts**: All text uses plotter-friendly vector paths (no filled text)
 
-### 2. SVG Spacing Analyzer
+### 2. SVG Spacing Analyzer ⚠️ WIP
+**Status: Not yet complete or tested** - This feature is planned for future development.
+
 Analyze existing SVG files to detect lines that are too close together.
 
 - **Automatic spacing detection**: Find lines below your minimum threshold
 - **Visual feedback**: Red markers show problem areas
 - **Detailed reports**: Table of all spacing issues found
 - **Annotated SVG export**: Download with problem areas highlighted
+
+*Note: This tool may be split into a separate project in the future.*
 
 ## Getting Started
 
@@ -63,14 +68,9 @@ npm run preview
 6. Plot the sheet and test different pens in each row
 7. Note where lines start touching to find your minimum spacing
 
-### SVG Spacing Analyzer
+### SVG Spacing Analyzer ⚠️
 
-1. Click "Choose SVG File" and select your plotter file
-2. Set your minimum spacing threshold (based on your pen calibration)
-3. Click "Analyze SVG"
-4. Review detected issues in the table
-5. Download the annotated SVG to see problem areas visually
-6. Fix spacing issues in your original design
+**This feature is not yet complete or tested.** It is planned for future development and may be split into a separate tool.
 
 ## Project Structure
 

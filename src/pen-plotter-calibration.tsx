@@ -63,6 +63,109 @@ export default function PlotterCalibration() {
     }
   };
 
+  // Simple single-line font renderer using a subset of Hershey Simplex font
+  // Data extracted from Hershey font collection - simplified for browser use
+  const singleLineFont: Record<string, { width: number; paths: string[] }> = {
+    ' ': { width: 8, paths: [] },
+    '0': { width: 10, paths: ['M 1,-9 L 9,-9 L 9,0 L 1,0 Z M 1,-9 L 9,0'] },
+    '1': { width: 10, paths: ['M 3,-9 L 5,-9 L 5,0'] },
+    '2': { width: 10, paths: ['M 1,-9 L 9,-9 L 9,-5 L 1,-5 L 1,0 L 9,0'] },
+    '3': { width: 10, paths: ['M 1,-9 L 9,-9 L 9,0 L 1,0 M 1,-5 L 9,-5'] },
+    '4': { width: 10, paths: ['M 1,-9 L 1,-5 L 9,-5 M 9,-9 L 9,0'] },
+    '5': { width: 10, paths: ['M 9,-9 L 1,-9 L 1,-5 L 9,-5 L 9,0 L 1,0'] },
+    '6': { width: 10, paths: ['M 9,-9 L 1,-9 L 1,0 L 9,0 L 9,-5 L 1,-5'] },
+    '7': { width: 10, paths: ['M 1,-9 L 9,-9 L 9,0'] },
+    '8': { width: 10, paths: ['M 1,-9 L 9,-9 L 9,0 L 1,0 Z M 1,-5 L 9,-5'] },
+    '9': { width: 10, paths: ['M 9,-5 L 1,-5 L 1,-9 L 9,-9 L 9,0'] },
+    '.': { width: 5, paths: ['M 2,0 L 3,0'] },
+    'A': { width: 11, paths: ['M 1,0 L 5.5,-9 L 10,0 M 2.5,-3 L 8.5,-3'] },
+    'B': { width: 10, paths: ['M 1,-9 L 1,0 M 1,-9 L 8,-9 L 9,-8 L 9,-5.5 L 8,-4.5 L 1,-4.5 M 8,-4.5 L 9,-3.5 L 9,-1 L 8,0 L 1,0'] },
+    'C': { width: 10, paths: ['M 9,-7 L 8,-9 L 2,-9 L 1,-8 L 1,-1 L 2,0 L 8,0 L 9,-2'] },
+    'D': { width: 10, paths: ['M 1,-9 L 1,0 M 1,-9 L 7,-9 L 9,-7 L 9,-2 L 7,0 L 1,0'] },
+    'E': { width: 9, paths: ['M 9,-9 L 1,-9 L 1,0 L 9,0 M 1,-4.5 L 7,-4.5'] },
+    'F': { width: 9, paths: ['M 1,-9 L 1,0 M 1,-9 L 9,-9 M 1,-4.5 L 7,-4.5'] },
+    'G': { width: 10, paths: ['M 9,-7 L 8,-9 L 2,-9 L 1,-8 L 1,-1 L 2,0 L 8,0 L 9,-1 L 9,-4 L 5,-4'] },
+    'H': { width: 10, paths: ['M 1,-9 L 1,0 M 9,-9 L 9,0 M 1,-4.5 L 9,-4.5'] },
+    'I': { width: 4, paths: ['M 2,-9 L 2,0'] },
+    'J': { width: 9, paths: ['M 8,-9 L 8,-2 L 7,0 L 2,0 L 1,-1'] },
+    'K': { width: 10, paths: ['M 1,-9 L 1,0 M 9,-9 L 1,-3 M 4.5,-5 L 9,0'] },
+    'L': { width: 9, paths: ['M 1,-9 L 1,0 L 9,0'] },
+    'M': { width: 12, paths: ['M 1,-9 L 1,0 M 1,-9 L 6,-4 M 6,-4 L 11,-9 L 11,0'] },
+    'N': { width: 10, paths: ['M 1,-9 L 1,0 M 1,-9 L 9,0 M 9,-9 L 9,0'] },
+    'O': { width: 11, paths: ['M 2,-9 L 9,-9 L 10,-8 L 10,-1 L 9,0 L 2,0 L 1,-1 L 1,-8 Z'] },
+    'P': { width: 10, paths: ['M 1,-9 L 1,0 M 1,-9 L 8,-9 L 9,-8 L 9,-5 L 8,-4 L 1,-4'] },
+    'Q': { width: 11, paths: ['M 2,-9 L 9,-9 L 10,-8 L 10,-1 L 9,0 L 2,0 L 1,-1 L 1,-8 Z M 6,-3 L 10,1'] },
+    'R': { width: 10, paths: ['M 1,-9 L 1,0 M 1,-9 L 8,-9 L 9,-8 L 9,-5 L 8,-4 L 1,-4 M 5,-4 L 9,0'] },
+    'S': { width: 10, paths: ['M 9,-7 L 8,-9 L 2,-9 L 1,-8 L 1,-6 L 2,-5 L 8,-4 L 9,-3 L 9,-1 L 8,0 L 2,0 L 1,-2'] },
+    'T': { width: 9, paths: ['M 0.5,-9 L 8.5,-9 M 4.5,-9 L 4.5,0'] },
+    'U': { width: 10, paths: ['M 1,-9 L 1,-1 L 2,0 L 8,0 L 9,-1 L 9,-9'] },
+    'V': { width: 11, paths: ['M 1,-9 L 5.5,0 L 10,-9'] },
+    'W': { width: 14, paths: ['M 1,-9 L 3.5,0 L 7,-9 L 10.5,0 L 13,-9'] },
+    'X': { width: 10, paths: ['M 1,-9 L 9,0 M 9,-9 L 1,0'] },
+    'Y': { width: 11, paths: ['M 1,-9 L 5.5,-4 L 5.5,0 M 10,-9 L 5.5,-4'] },
+    'Z': { width: 9, paths: ['M 1,-9 L 9,-9 L 1,0 L 9,0'] },
+    'a': { width: 9, paths: ['M 7,-6 L 8,-6.5 L 7,-7 L 2,-7 L 1,-6 L 1,-1 L 2,0 L 7,0 L 8,-1 L 8,0 M 8,-3.5 L 2,-3.5'] },
+    'b': { width: 9, paths: ['M 1,-9 L 1,0 M 1,-6 L 2,-7 L 7,-7 L 8,-6 L 8,-1 L 7,0 L 2,0 L 1,-1'] },
+    'c': { width: 8, paths: ['M 8,-6 L 7,-7 L 2,-7 L 1,-6 L 1,-1 L 2,0 L 7,0 L 8,-1'] },
+    'd': { width: 9, paths: ['M 8,-9 L 8,0 M 8,-6 L 7,-7 L 2,-7 L 1,-6 L 1,-1 L 2,0 L 7,0 L 8,-1'] },
+    'e': { width: 8, paths: ['M 1,-3.5 L 7,-3.5 L 8,-5 L 7,-7 L 2,-7 L 1,-6 L 1,-1 L 2,0 L 7,0 L 8,-1'] },
+    'f': { width: 6, paths: ['M 5,-9 L 4,-10 L 3,-10 L 2,-9 L 2,0 M 1,-7 L 4,-7'] },
+    'g': { width: 9, paths: ['M 8,-7 L 8,1 L 7,2 L 2,2 L 1,1 M 8,-6 L 7,-7 L 2,-7 L 1,-6 L 1,-1 L 2,0 L 7,0 L 8,-1'] },
+    'h': { width: 9, paths: ['M 1,-9 L 1,0 M 1,-6 L 2,-7 L 7,-7 L 8,-6 L 8,0'] },
+    'i': { width: 4, paths: ['M 2,-10 L 2,-9 M 2,-7 L 2,0'] },
+    'j': { width: 4, paths: ['M 2,-10 L 2,-9 M 2,-7 L 2,1 L 1,2 L 0,2'] },
+    'k': { width: 8, paths: ['M 1,-9 L 1,0 M 7,-7 L 1,-2 M 4,-4 L 7,0'] },
+    'l': { width: 4, paths: ['M 2,-9 L 2,0'] },
+    'm': { width: 14, paths: ['M 1,-7 L 1,0 M 1,-6 L 2,-7 L 4,-7 L 5,-6 L 5,0 M 5,-6 L 6,-7 L 8,-7 L 9,-6 L 9,0'] },
+    'n': { width: 9, paths: ['M 1,-7 L 1,0 M 1,-6 L 2,-7 L 7,-7 L 8,-6 L 8,0'] },
+    'o': { width: 9, paths: ['M 2,-7 L 7,-7 L 8,-6 L 8,-1 L 7,0 L 2,0 L 1,-1 L 1,-6 Z'] },
+    'p': { width: 9, paths: ['M 1,-7 L 1,2 M 1,-6 L 2,-7 L 7,-7 L 8,-6 L 8,-1 L 7,0 L 2,0 L 1,-1'] },
+    'q': { width: 9, paths: ['M 8,-7 L 8,2 M 8,-6 L 7,-7 L 2,-7 L 1,-6 L 1,-1 L 2,0 L 7,0 L 8,-1'] },
+    'r': { width: 6, paths: ['M 1,-7 L 1,0 M 1,-5 L 2,-7 L 4,-7 L 5,-6'] },
+    's': { width: 7, paths: ['M 7,-6 L 6,-7 L 2,-7 L 1,-6 L 2,-5 L 6,-2 L 5,-1 L 1,-1 L 0,0'] },
+    't': { width: 5, paths: ['M 2,-9 L 2,-1 L 3,0 L 4,0 M 1,-7 L 4,-7'] },
+    'u': { width: 9, paths: ['M 1,-7 L 1,-1 L 2,0 L 7,0 L 8,-1 M 8,-7 L 8,0'] },
+    'v': { width: 8, paths: ['M 1,-7 L 4,0 L 7,-7'] },
+    'w': { width: 12, paths: ['M 1,-7 L 3,0 L 6,-7 L 9,0 L 11,-7'] },
+    'x': { width: 8, paths: ['M 1,-7 L 7,0 M 7,-7 L 1,0'] },
+    'y': { width: 8, paths: ['M 1,-7 L 4,0 M 7,-7 L 4,0 L 3,2 L 1,2'] },
+    'z': { width: 7, paths: ['M 1,-7 L 7,-7 L 1,0 L 7,0'] },
+    '-': { width: 8, paths: ['M 1,-4.5 L 7,-4.5'] },
+  };
+
+  const renderHersheyText = (text: string, x: number, y: number, fontSize: number, anchor: 'start' | 'middle' | 'end' = 'start') => {
+    const scale = fontSize / 10; // Font is designed for 10 unit height
+    let paths = '';
+
+    // Calculate total width for anchoring
+    let totalWidth = 0;
+    for (const char of text) {
+      const glyph = singleLineFont[char] || singleLineFont[' '];
+      totalWidth += glyph.width * scale;
+    }
+
+    // Adjust starting x based on anchor
+    let currentX = x;
+    if (anchor === 'middle') {
+      currentX = x - totalWidth / 2;
+    } else if (anchor === 'end') {
+      currentX = x - totalWidth;
+    }
+
+    // Render each character
+    for (const char of text) {
+      const glyph = singleLineFont[char] || singleLineFont[' '];
+
+      for (const path of glyph.paths) {
+        paths += `      <path d="${path}" transform="translate(${currentX}, ${y}) scale(${scale}, ${scale})" stroke="black" stroke-width="${0.1 / scale}" fill="none"/>\n`;
+      }
+
+      currentX += glyph.width * scale;
+    }
+
+    return paths;
+  };
+
   const generateSVG = () => {
     const dims = getDimensions();
     const { width, height } = dims;
@@ -80,8 +183,8 @@ export default function PlotterCalibration() {
 `;
 
     // Title
-    svg += `    <text x="${width/2}" y="${margin + 4}" font-size="4" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">Pen Calibration Test Sheet</text>\n`;
-    svg += `    <text x="${width/2}" y="${margin + 9}" font-size="2.5" text-anchor="middle" font-family="Arial, sans-serif">Per-Pen Test Suite</text>\n`;
+    svg += renderHersheyText('Pen Calibration Test Sheet', width / 2, margin + 4, 4, 'middle');
+    svg += renderHersheyText('Per-Pen Test Suite', width / 2, margin + 9, 2.5, 'middle');
 
     let yOffset = margin + 15;
 
@@ -100,7 +203,7 @@ export default function PlotterCalibration() {
       const labelHeight = squareSize * 2 + 2; // Height to cover squares + circles
       svg += `      <rect x="${margin}" y="${currentY}" width="${labelWidth}" height="${labelHeight}" stroke-width="0.2"/>\n`;
       svg += `      <line x1="${margin}" y1="${currentY + 6}" x2="${margin + labelWidth}" y2="${currentY + 6}" stroke-width="0.1"/>\n`;
-      svg += `      <text x="${margin + labelWidth/2}" y="${currentY + 4}" font-size="1.5" text-anchor="middle" font-family="Arial, sans-serif">Pen ${penIdx + 1}</text>\n`;
+      svg += renderHersheyText(`Pen ${penIdx + 1}`, margin + labelWidth / 2, currentY + 4, 1.5, 'middle');
 
       const testsStartX = margin + labelWidth + 5;
 
@@ -110,7 +213,7 @@ export default function PlotterCalibration() {
         const x = testsStartX + idx * (squareSize + gapBetweenSquares);
 
         // Label above square
-        svg += `      <text x="${x + squareSize/2}" y="${currentY - 1}" font-size="1.2" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
+        svg += renderHersheyText(spacing.toFixed(2), x + squareSize / 2, currentY - 1, 1.2, 'middle');
 
         // Square border (optional)
         if (config.showBoundingBoxes) {
@@ -167,8 +270,8 @@ export default function PlotterCalibration() {
 
         spacings.forEach((spacing, idx) => {
           const x = testsStartX + idx * (squareSize + gapBetweenSquares);
-          const xCenter = x + squareSize/2;
-          const yCenter = currentY + squareSize/2;
+          const xCenter = x + squareSize / 2;
+          const yCenter = currentY + squareSize / 2;
 
           // Bounding box (optional)
           if (config.showBoundingBoxes) {
@@ -176,7 +279,7 @@ export default function PlotterCalibration() {
           }
 
           // Concentric circles
-          for (let r = spacing; r < squareSize/2; r += spacing) {
+          for (let r = spacing; r < squareSize / 2; r += spacing) {
             svg += `      <circle cx="${xCenter}" cy="${yCenter}" r="${r}"/>\n`;
           }
         });
@@ -193,7 +296,7 @@ export default function PlotterCalibration() {
           const x = testsStartX + idx * (squareSize + gapBetweenSquares);
 
           // Label above
-          svg += `      <text x="${x + squareSize/2}" y="${currentY - 1}" font-size="1.2" text-anchor="middle" font-family="monospace">${spacing.toFixed(2)}</text>\n`;
+          svg += renderHersheyText(spacing.toFixed(2), x + squareSize / 2, currentY - 1, 1.2, 'middle');
 
           // Bounding box (optional)
           if (config.showBoundingBoxes) {
@@ -206,7 +309,7 @@ export default function PlotterCalibration() {
             for (let offset = -squareSize; offset < squareSize * 2; offset += spacing) {
               const x1 = x + offset;
               const y1 = currentY;
-              const x2 = x + offset + squareSize * Math.tan(Math.PI/2 - angle);
+              const x2 = x + offset + squareSize * Math.tan(Math.PI / 2 - angle);
               const y2 = currentY + squareSize;
               svg += `      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>\n`;
             }
@@ -235,7 +338,7 @@ export default function PlotterCalibration() {
         // Track positions for labels
         const labelPositions = [
           { x: testsStartX, spacing: config.startSpacing, label: 'start' },
-          { x: testsStartX + gradientWidth/2, spacing: (config.startSpacing + config.endSpacing) / 2, label: 'mid' },
+          { x: testsStartX + gradientWidth / 2, spacing: (config.startSpacing + config.endSpacing) / 2, label: 'mid' },
           { x: testsStartX + gradientWidth, spacing: config.endSpacing, label: 'end' }
         ];
 
@@ -249,12 +352,12 @@ export default function PlotterCalibration() {
         }
 
         // Add numeric labels at start, middle, and end
-        svg += `      <text x="${testsStartX}" y="${currentY - 1}" font-size="1.2" text-anchor="start" font-family="monospace">${config.startSpacing.toFixed(2)}</text>\n`;
-        svg += `      <text x="${testsStartX + gradientWidth/2}" y="${currentY - 1}" font-size="1.2" text-anchor="middle" font-family="monospace">${((config.startSpacing + config.endSpacing) / 2).toFixed(2)}</text>\n`;
-        svg += `      <text x="${testsStartX + gradientWidth}" y="${currentY - 1}" font-size="1.2" text-anchor="end" font-family="monospace">${config.endSpacing.toFixed(2)}</text>\n`;
+        svg += renderHersheyText(config.startSpacing.toFixed(2), testsStartX, currentY - 1, 1.2, 'start');
+        svg += renderHersheyText(((config.startSpacing + config.endSpacing) / 2).toFixed(2), testsStartX + gradientWidth / 2, currentY - 1, 1.2, 'middle');
+        svg += renderHersheyText(config.endSpacing.toFixed(2), testsStartX + gradientWidth, currentY - 1, 1.2, 'end');
 
         // Label below
-        svg += `      <text x="${testsStartX + gradientWidth/2}" y="${currentY + gradientHeight + 3}" font-size="1.2" text-anchor="middle" font-family="monospace" font-style="italic">gradient</text>\n`;
+        svg += renderHersheyText('gradient', testsStartX + gradientWidth / 2, currentY + gradientHeight + 3, 1.2, 'middle');
       }
 
       // End group for this pen row
@@ -267,15 +370,15 @@ export default function PlotterCalibration() {
   <g stroke="black" stroke-width="0.2" fill="none">
     <line x1="5" y1="5" x2="10" y2="5"/>
     <line x1="5" y1="5" x2="5" y2="10"/>
-    <line x1="${width-5}" y1="5" x2="${width-10}" y2="5"/>
-    <line x1="${width-5}" y1="5" x2="${width-5}" y2="10"/>
-    <line x1="5" y1="${height-5}" x2="10" y2="${height-5}"/>
-    <line x1="5" y1="${height-5}" x2="5" y2="${height-10}"/>
-    <line x1="${width-5}" y1="${height-5}" x2="${width-10}" y2="${height-5}"/>
-    <line x1="${width-5}" y1="${height-5}" x2="${width-5}" y2="${height-10}"/>
+    <line x1="${width - 5}" y1="5" x2="${width - 10}" y2="5"/>
+    <line x1="${width - 5}" y1="5" x2="${width - 5}" y2="10"/>
+    <line x1="5" y1="${height - 5}" x2="10" y2="${height - 5}"/>
+    <line x1="5" y1="${height - 5}" x2="5" y2="${height - 10}"/>
+    <line x1="${width - 5}" y1="${height - 5}" x2="${width - 10}" y2="${height - 5}"/>
+    <line x1="${width - 5}" y1="${height - 5}" x2="${width - 5}" y2="${height - 10}"/>
   </g>
 </svg>`;
-    
+
     return svg;
   };
 
@@ -296,7 +399,7 @@ export default function PlotterCalibration() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">Pen Plotter Calibration Sheet</h1>
-        
+
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Controls */}
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -304,13 +407,13 @@ export default function PlotterCalibration() {
               <Settings className="w-5 h-5" />
               <h2 className="text-xl font-semibold">Settings</h2>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Paper Size</label>
                 <select
                   value={config.paperSize}
-                  onChange={(e) => setConfig({...config, paperSize: e.target.value})}
+                  onChange={(e) => setConfig({ ...config, paperSize: e.target.value })}
                   className="w-full px-3 py-2 border rounded"
                 >
                   <option value="A3">A3 (420×297mm)</option>
@@ -325,7 +428,7 @@ export default function PlotterCalibration() {
                 <label className="block text-sm font-medium mb-1">Orientation</label>
                 <select
                   value={config.orientation}
-                  onChange={(e) => setConfig({...config, orientation: e.target.value})}
+                  onChange={(e) => setConfig({ ...config, orientation: e.target.value })}
                   className="w-full px-3 py-2 border rounded"
                 >
                   <option value="landscape">Landscape</option>
@@ -338,7 +441,7 @@ export default function PlotterCalibration() {
                 <input
                   type="number"
                   value={config.numPens}
-                  onChange={(e) => setConfig({...config, numPens: Number(e.target.value)})}
+                  onChange={(e) => setConfig({ ...config, numPens: Number(e.target.value) })}
                   className="w-full px-3 py-2 border rounded"
                   min="1"
                   max="8"
@@ -352,7 +455,7 @@ export default function PlotterCalibration() {
                     <input
                       type="radio"
                       checked={config.spacingMode === 'auto'}
-                      onChange={() => setConfig({...config, spacingMode: 'auto'})}
+                      onChange={() => setConfig({ ...config, spacingMode: 'auto' })}
                       className="w-4 h-4"
                     />
                     <span className="text-sm">Auto-generate spacings</span>
@@ -361,7 +464,7 @@ export default function PlotterCalibration() {
                     <input
                       type="radio"
                       checked={config.spacingMode === 'manual'}
-                      onChange={() => setConfig({...config, spacingMode: 'manual'})}
+                      onChange={() => setConfig({ ...config, spacingMode: 'manual' })}
                       className="w-4 h-4"
                     />
                     <span className="text-sm">Manual spacings</span>
@@ -377,7 +480,7 @@ export default function PlotterCalibration() {
                       type="number"
                       step="0.1"
                       value={config.startSpacing}
-                      onChange={(e) => setConfig({...config, startSpacing: Number(e.target.value)})}
+                      onChange={(e) => setConfig({ ...config, startSpacing: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded"
                       min="0.1"
                       max="5"
@@ -390,7 +493,7 @@ export default function PlotterCalibration() {
                       type="number"
                       step="0.1"
                       value={config.endSpacing}
-                      onChange={(e) => setConfig({...config, endSpacing: Number(e.target.value)})}
+                      onChange={(e) => setConfig({ ...config, endSpacing: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded"
                       min="0.1"
                       max="10"
@@ -402,7 +505,7 @@ export default function PlotterCalibration() {
                     <input
                       type="number"
                       value={config.steps}
-                      onChange={(e) => setConfig({...config, steps: Number(e.target.value)})}
+                      onChange={(e) => setConfig({ ...config, steps: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded"
                       min="3"
                       max="15"
@@ -414,7 +517,7 @@ export default function PlotterCalibration() {
                   <label className="block text-sm font-medium mb-1">Spacing Values (mm)</label>
                   <textarea
                     value={config.manualSpacings}
-                    onChange={(e) => setConfig({...config, manualSpacings: e.target.value})}
+                    onChange={(e) => setConfig({ ...config, manualSpacings: e.target.value })}
                     className="w-full px-3 py-2 border rounded font-mono text-sm"
                     rows={3}
                     placeholder="0.3, 0.5, 0.7, 1.0, 1.5, 2.0"
@@ -430,10 +533,10 @@ export default function PlotterCalibration() {
                 <input
                   type="number"
                   value={config.squareSize}
-                  onChange={(e) => setConfig({...config, squareSize: Number(e.target.value)})}
+                  onChange={(e) => setConfig({ ...config, squareSize: Number(e.target.value) })}
                   className="w-full px-3 py-2 border rounded"
-                  min="15"
-                  max="40"
+                  min="5"
+                  max="100"
                 />
               </div>
 
@@ -444,7 +547,7 @@ export default function PlotterCalibration() {
                     <input
                       type="checkbox"
                       checked={config.includeCircles}
-                      onChange={(e) => setConfig({...config, includeCircles: e.target.checked})}
+                      onChange={(e) => setConfig({ ...config, includeCircles: e.target.checked })}
                       className="w-4 h-4"
                     />
                     <span className="text-sm">Concentric Circles</span>
@@ -453,7 +556,7 @@ export default function PlotterCalibration() {
                     <input
                       type="checkbox"
                       checked={config.includeCrosshatch}
-                      onChange={(e) => setConfig({...config, includeCrosshatch: e.target.checked})}
+                      onChange={(e) => setConfig({ ...config, includeCrosshatch: e.target.checked })}
                       className="w-4 h-4"
                     />
                     <span className="text-sm">Crosshatch Patterns</span>
@@ -462,7 +565,7 @@ export default function PlotterCalibration() {
                     <input
                       type="checkbox"
                       checked={config.includeGradient}
-                      onChange={(e) => setConfig({...config, includeGradient: e.target.checked})}
+                      onChange={(e) => setConfig({ ...config, includeGradient: e.target.checked })}
                       className="w-4 h-4"
                     />
                     <span className="text-sm">Gradient Spacing Test</span>
@@ -474,7 +577,7 @@ export default function PlotterCalibration() {
                 <label className="block text-sm font-medium mb-1">Line Orientation</label>
                 <select
                   value={config.lineOrientation}
-                  onChange={(e) => setConfig({...config, lineOrientation: e.target.value as 'both' | 'vertical' | 'horizontal'})}
+                  onChange={(e) => setConfig({ ...config, lineOrientation: e.target.value as 'both' | 'vertical' | 'horizontal' })}
                   className="w-full px-3 py-2 border rounded"
                 >
                   <option value="both">Both (H top, V bottom)</option>
@@ -492,7 +595,7 @@ export default function PlotterCalibration() {
                   <input
                     type="number"
                     value={config.gradientStepLines}
-                    onChange={(e) => setConfig({...config, gradientStepLines: Number(e.target.value)})}
+                    onChange={(e) => setConfig({ ...config, gradientStepLines: Number(e.target.value) })}
                     className="w-full px-3 py-2 border rounded"
                     min="2"
                     max="10"
@@ -508,7 +611,7 @@ export default function PlotterCalibration() {
                   <input
                     type="checkbox"
                     checked={config.showBoundingBoxes}
-                    onChange={(e) => setConfig({...config, showBoundingBoxes: e.target.checked})}
+                    onChange={(e) => setConfig({ ...config, showBoundingBoxes: e.target.checked })}
                     className="w-4 h-4"
                   />
                   <span className="text-sm">Show Bounding Boxes</span>
@@ -540,13 +643,13 @@ export default function PlotterCalibration() {
           <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Preview</h2>
             <div className="border rounded-lg p-4 bg-gray-50 overflow-auto">
-              <div 
+              <div
                 dangerouslySetInnerHTML={{ __html: generateSVG() }}
                 className="mx-auto"
                 style={{ maxWidth: '100%' }}
               />
             </div>
-            
+
             <div className="mt-4 grid md:grid-cols-2 gap-4">
               <div className="p-4 bg-blue-50 rounded border border-blue-200">
                 <h3 className="font-semibold text-sm mb-2">How to Use:</h3>

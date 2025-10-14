@@ -13,11 +13,15 @@ export default function PlotterCalibration() {
     includeCircles: true,
     includeCrosshatch: false,
     includeGradient: true,
+    includeStippling: false,
+    includeLongLines: false,
     spacingMode: 'auto' as 'auto' | 'manual',
     manualSpacings: '0.3, 0.5, 0.7, 1.0, 1.2, 1.5, 1.8, 2.0',
     showBoundingBoxes: false,
+    showHeaderText: true,
     gradientStepLines: 4,
-    lineOrientation: 'both' as 'both' | 'vertical' | 'horizontal'
+    lineOrientation: 'both' as 'both' | 'vertical' | 'horizontal',
+    stipplingDensity: 10 // dots per 10mm
   });
 
   const paperSizes = {
@@ -182,9 +186,14 @@ export default function PlotterCalibration() {
   <g stroke="black" stroke-width="0.1" fill="none">
 `;
 
-    // Title
-    svg += renderHersheyText('Pen Calibration Test Sheet', width / 2, margin + 4, 4, 'middle');
-    svg += renderHersheyText('Per-Pen Test Suite', width / 2, margin + 9, 2.5, 'middle');
+    // Header/Title group (can be easily hidden/removed)
+    if (config.showHeaderText) {
+      svg += `    <g id="header-text">\n`;
+      svg += `      <!-- Title and header text -->\n`;
+      svg += renderHersheyText('Pen Calibration Test Sheet', width / 2, margin + 4, 4, 'middle');
+      svg += renderHersheyText('Per-Pen Test Suite', width / 2, margin + 9, 2.5, 'middle');
+      svg += `    </g>\n`;
+    }
 
     let yOffset = margin + 15;
 
@@ -358,6 +367,70 @@ export default function PlotterCalibration() {
 
         // Label below
         svg += renderHersheyText('gradient', testsStartX + gradientWidth / 2, currentY + gradientHeight + 3, 1.2, 'middle');
+        currentY += squareSize + gapBetweenSections; // Move down for next section
+      }
+
+      // Row 5: Stippling test (if enabled)
+      if (config.includeStippling) {
+        svg += `      <!-- Stippling/dot density test -->\n`;
+        const stipplingWidth = Math.max(100, spacings.length * (squareSize + gapBetweenSquares));
+        const stipplingHeight = squareSize;
+
+        // Bounding box (optional)
+        if (config.showBoundingBoxes) {
+          svg += `      <rect x="${testsStartX}" y="${currentY}" width="${stipplingWidth}" height="${stipplingHeight}" stroke-width="0.2"/>\n`;
+        }
+
+        // Generate stippling with gradient density (sparse to dense)
+        const startDensity = config.stipplingDensity / 2; // dots per 10mm
+        const endDensity = config.stipplingDensity * 2;
+        const sections = 20;
+        const sectionWidth = stipplingWidth / sections;
+
+        for (let section = 0; section < sections; section++) {
+          const sectionX = testsStartX + section * sectionWidth;
+          const density = startDensity + (endDensity - startDensity) * (section / sections);
+          const spacing = 10 / density; // spacing in mm
+
+          // Fill section with dots in a grid pattern
+          for (let dx = 0; dx < sectionWidth; dx += spacing) {
+            for (let dy = 0; dy < stipplingHeight; dy += spacing) {
+              const dotX = sectionX + dx + spacing / 2;
+              const dotY = currentY + dy + spacing / 2;
+              // Draw a small circle (0.1mm radius) as a dot
+              svg += `      <circle cx="${dotX}" cy="${dotY}" r="0.1"/>\n`;
+            }
+          }
+        }
+
+        // Labels
+        svg += renderHersheyText('sparse', testsStartX, currentY - 1, 1.2, 'start');
+        svg += renderHersheyText('stippling', testsStartX + stipplingWidth / 2, currentY - 1, 1.2, 'middle');
+        svg += renderHersheyText('dense', testsStartX + stipplingWidth, currentY - 1, 1.2, 'end');
+        currentY += stipplingHeight + gapBetweenSections; // Move down for next section
+      }
+
+      // Row 6: Long line test (if enabled)
+      if (config.includeLongLines) {
+        svg += `      <!-- Long line ink flow test -->\n`;
+        const lineWidth = Math.max(100, spacings.length * (squareSize + gapBetweenSquares));
+        const lineHeight = squareSize;
+        const numLines = 5;
+        const lineSpacing = lineHeight / (numLines + 1);
+
+        // Bounding box (optional)
+        if (config.showBoundingBoxes) {
+          svg += `      <rect x="${testsStartX}" y="${currentY}" width="${lineWidth}" height="${lineHeight}" stroke-width="0.2"/>\n`;
+        }
+
+        // Draw parallel horizontal lines
+        for (let i = 1; i <= numLines; i++) {
+          const lineY = currentY + i * lineSpacing;
+          svg += `      <line x1="${testsStartX}" y1="${lineY}" x2="${testsStartX + lineWidth}" y2="${lineY}"/>\n`;
+        }
+
+        // Label
+        svg += renderHersheyText('long lines', testsStartX + lineWidth / 2, currentY - 1, 1.2, 'middle');
       }
 
       // End group for this pen row
@@ -570,6 +643,24 @@ export default function PlotterCalibration() {
                     />
                     <span className="text-sm">Gradient Spacing Test</span>
                   </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.includeStippling}
+                      onChange={(e) => setConfig({ ...config, includeStippling: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Stippling/Dot Density</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.includeLongLines}
+                      onChange={(e) => setConfig({ ...config, includeLongLines: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Long Lines (Ink Flow)</span>
+                  </label>
                 </div>
               </div>
 
@@ -606,6 +697,23 @@ export default function PlotterCalibration() {
                 </div>
               )}
 
+              {config.includeStippling && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Stippling Density</label>
+                  <input
+                    type="number"
+                    value={config.stipplingDensity}
+                    onChange={(e) => setConfig({ ...config, stipplingDensity: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border rounded"
+                    min="5"
+                    max="30"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Dots per 10mm (center density)
+                  </p>
+                </div>
+              )}
+
               <div className="pt-2 border-t">
                 <label className="flex items-center gap-2">
                   <input
@@ -615,6 +723,15 @@ export default function PlotterCalibration() {
                     className="w-4 h-4"
                   />
                   <span className="text-sm">Show Bounding Boxes</span>
+                </label>
+                <label className="flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    checked={config.showHeaderText}
+                    onChange={(e) => setConfig({ ...config, showHeaderText: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Show Header Text</span>
                 </label>
               </div>
 

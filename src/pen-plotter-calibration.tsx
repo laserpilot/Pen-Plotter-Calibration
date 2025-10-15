@@ -21,7 +21,8 @@ export default function PlotterCalibration() {
     showHeaderText: true,
     gradientStepLines: 4,
     lineOrientation: 'both' as 'both' | 'vertical' | 'horizontal',
-    stipplingDensity: 10 // dots per 10mm
+    stipplingDensity: 10, // dots per 10mm
+    stipplingMode: 'circle' as 'circle' | 'point'
   });
 
   const paperSizes = {
@@ -464,8 +465,14 @@ export default function PlotterCalibration() {
             for (let dy = 0; dy < stipplingHeight; dy += spacing) {
               const dotX = sectionX + dx + spacing / 2;
               const dotY = currentY + dy + spacing / 2;
-              // Draw a small circle (0.1mm radius) as a dot
-              svg += `      <circle cx="${dotX}" cy="${dotY}" r="0.1"/>\n`;
+
+              if (config.stipplingMode === 'point') {
+                // Zero-length line (point) - more plotter-efficient
+                svg += `      <line x1="${dotX}" y1="${dotY}" x2="${dotX}" y2="${dotY}"/>\n`;
+              } else {
+                // Small circle (0.1mm radius)
+                svg += `      <circle cx="${dotX}" cy="${dotY}" r="0.1"/>\n`;
+              }
             }
           }
         }
@@ -765,20 +772,37 @@ export default function PlotterCalibration() {
               )}
 
               {config.includeStippling && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Stippling Density</label>
-                  <input
-                    type="number"
-                    value={config.stipplingDensity}
-                    onChange={(e) => setConfig({ ...config, stipplingDensity: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border rounded"
-                    min="5"
-                    max="30"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Dots per 10mm (center density)
-                  </p>
-                </div>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Stippling Density</label>
+                    <input
+                      type="number"
+                      value={config.stipplingDensity}
+                      onChange={(e) => setConfig({ ...config, stipplingDensity: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border rounded"
+                      min="5"
+                      max="30"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Dots per 10mm (center density)
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Stippling Mode</label>
+                    <select
+                      value={config.stipplingMode}
+                      onChange={(e) => setConfig({ ...config, stipplingMode: e.target.value as 'circle' | 'point' })}
+                      className="w-full px-3 py-2 border rounded"
+                    >
+                      <option value="circle">Small Circles (0.1mm)</option>
+                      <option value="point">Points (Zero-length Lines)</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Points are more plotter-efficient
+                    </p>
+                  </div>
+                </>
               )}
 
               <div className="pt-2 border-t">

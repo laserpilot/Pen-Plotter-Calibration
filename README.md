@@ -10,10 +10,18 @@ A collection of web-based tools for calibrating and testing pen plotters.
 Generate calibration test sheets to find optimal line spacing for your pens and plotter setup.
 
 - **Configurable paper sizes**: A3, A4, A5, Letter, Tabloid
-- **Multiple test patterns**: Line spacing tests, crosshatch patterns, concentric circles
-- **Adjustable parameters**: Spacing range, square size, number of test rows
+- **Multiple test patterns**:
+  - Discrete spacing tests with labeled squares
+  - Concentric circles for curved line testing
+  - Crosshatch patterns for diagonal overlap testing
+  - Gradient spacing for continuous transition testing
+  - Stippling/dot density for small dot capability
+  - Long parallel lines for ink flow consistency
+- **Adjustable parameters**: Spacing range (0.2-1.5mm default), square size, number of test rows
+- **Per-pen test suite**: Each row contains a complete test suite for one pen
 - **SVG export**: Download ready-to-plot calibration sheets
 - **Single-line fonts**: All text uses plotter-friendly vector paths (no filled text)
+- **Flexible layout**: Toggle header text and bounding boxes on/off
 
 ### 2. SVG Spacing Analyzer ⚠️ WIP
 **Status: Not yet complete or tested** - This feature is planned for future development.

@@ -170,6 +170,65 @@ export default function PlotterCalibration() {
     return paths;
   };
 
+  // Calculate required height for a single row based on enabled tests
+  const calculateRowHeight = () => {
+    const squareSize = config.squareSize;
+    const gapBetweenSections = 8;
+    let totalHeight = 0;
+
+    // Row 1: Discrete spacing squares (always included)
+    totalHeight += squareSize;
+
+    // Row 2: Circles (if enabled)
+    if (config.includeCircles) {
+      totalHeight += 2 + squareSize; // 2mm gap + square height
+    }
+
+    // Row 3: Crosshatch (if enabled)
+    if (config.includeCrosshatch) {
+      totalHeight += gapBetweenSections + squareSize;
+    }
+
+    // Row 4: Gradient (if enabled)
+    if (config.includeGradient) {
+      totalHeight += gapBetweenSections + squareSize;
+    }
+
+    // Row 5: Stippling (if enabled)
+    if (config.includeStippling) {
+      totalHeight += gapBetweenSections + squareSize;
+    }
+
+    // Row 6: Long lines (if enabled)
+    if (config.includeLongLines) {
+      totalHeight += gapBetweenSections + squareSize;
+    }
+
+    // Add some padding for labels above tests
+    totalHeight += 4;
+
+    return totalHeight;
+  };
+
+  // Check layout and return warning if content doesn't fit
+  const getLayoutWarning = () => {
+    const dims = getDimensions();
+    const { height } = dims;
+    const margin = 10;
+    const yOffset = margin + 15;
+    const requiredRowHeight = calculateRowHeight();
+    const availableHeight = height - yOffset - margin - 5;
+    const totalRequiredHeight = requiredRowHeight * config.numPens;
+
+    if (totalRequiredHeight > availableHeight) {
+      const actualRows = Math.floor(availableHeight / requiredRowHeight);
+      if (actualRows < config.numPens) {
+        return `⚠️ Only ${actualRows} of ${config.numPens} pen rows will fit on this page. Consider reducing pen rows or disabling some test patterns.`;
+      }
+    }
+    return '';
+  };
+
   const generateSVG = () => {
     const dims = getDimensions();
     const { width, height } = dims;
@@ -197,11 +256,19 @@ export default function PlotterCalibration() {
 
     let yOffset = margin + 15;
 
-    // Generate rows for each pen (each row contains all tests)
+    // Calculate required height per row and check if everything fits
+    const requiredRowHeight = calculateRowHeight();
     const availableHeight = height - yOffset - margin - 5;
-    const rowHeight = availableHeight / config.numPens;
+    const totalRequiredHeight = requiredRowHeight * config.numPens;
 
-    for (let penIdx = 0; penIdx < config.numPens; penIdx++) {
+    // Determine actual number of rows that will fit
+    const actualRows = Math.min(
+      config.numPens,
+      Math.floor(availableHeight / requiredRowHeight)
+    );
+    const rowHeight = requiredRowHeight;
+
+    for (let penIdx = 0; penIdx < actualRows; penIdx++) {
       const rowY = yOffset + penIdx * rowHeight;
       let currentY = rowY;
 
@@ -298,10 +365,9 @@ export default function PlotterCalibration() {
       // Row 3: Crosshatch (if enabled)
       if (config.includeCrosshatch) {
         svg += `      <!-- Crosshatch tests -->\n`;
-        const numCrosshatch = Math.min(4, spacings.length);
-        const crosshatchSpacingsToUse = spacings.slice(0, numCrosshatch);
 
-        crosshatchSpacingsToUse.forEach((spacing, idx) => {
+        // Use all spacings, same as discrete spacing tests
+        spacings.forEach((spacing, idx) => {
           const x = testsStartX + idx * (squareSize + gapBetweenSquares);
 
           // Label above
@@ -381,15 +447,16 @@ export default function PlotterCalibration() {
           svg += `      <rect x="${testsStartX}" y="${currentY}" width="${stipplingWidth}" height="${stipplingHeight}" stroke-width="0.2"/>\n`;
         }
 
-        // Generate stippling with gradient density (sparse to dense)
-        const startDensity = config.stipplingDensity / 2; // dots per 10mm
-        const endDensity = config.stipplingDensity * 2;
+        // Generate stippling with gradient density (dense to sparse, reversed)
+        const denseDensity = config.stipplingDensity * 2; // dots per 10mm
+        const sparseDensity = config.stipplingDensity / 2;
         const sections = 20;
         const sectionWidth = stipplingWidth / sections;
 
         for (let section = 0; section < sections; section++) {
           const sectionX = testsStartX + section * sectionWidth;
-          const density = startDensity + (endDensity - startDensity) * (section / sections);
+          // Reverse: start with dense, end with sparse
+          const density = denseDensity - (denseDensity - sparseDensity) * (section / sections);
           const spacing = 10 / density; // spacing in mm
 
           // Fill section with dots in a grid pattern
@@ -403,10 +470,10 @@ export default function PlotterCalibration() {
           }
         }
 
-        // Labels
-        svg += renderHersheyText('sparse', testsStartX, currentY - 1, 1.2, 'start');
+        // Labels (reversed)
+        svg += renderHersheyText('dense', testsStartX, currentY - 1, 1.2, 'start');
         svg += renderHersheyText('stippling', testsStartX + stipplingWidth / 2, currentY - 1, 1.2, 'middle');
-        svg += renderHersheyText('dense', testsStartX + stipplingWidth, currentY - 1, 1.2, 'end');
+        svg += renderHersheyText('sparse', testsStartX + stipplingWidth, currentY - 1, 1.2, 'end');
         currentY += stipplingHeight + gapBetweenSections; // Move down for next section
       }
 
@@ -743,6 +810,12 @@ export default function PlotterCalibration() {
                 Download SVG
               </button>
             </div>
+
+            {getLayoutWarning() && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                {getLayoutWarning()}
+              </div>
+            )}
 
             <div className="mt-4 p-3 bg-gray-50 rounded text-xs">
               <strong>Test spacings:</strong>

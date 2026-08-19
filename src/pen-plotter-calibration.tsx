@@ -22,7 +22,8 @@ export default function PlotterCalibration() {
     gradientStepLines: 4,
     lineOrientation: 'both' as 'both' | 'vertical' | 'horizontal',
     stipplingDensity: 10, // dots per 10mm
-    stipplingMode: 'circle' as 'circle' | 'point'
+    stipplingMode: 'circle' as 'circle' | 'point',
+    nibSize: 0.3 // pen nib width in mm, used as the drawn line stroke width
   });
 
   const paperSizes = {
@@ -30,7 +31,8 @@ export default function PlotterCalibration() {
     'A4': { width: 297, height: 210 },
     'A5': { width: 210, height: 148 },
     'Letter': { width: 279, height: 216 },
-    'Tabloid': { width: 432, height: 279 }
+    'Tabloid': { width: 432, height: 279 },
+    '22x30': { width: 762, height: 558.8 }
   };
 
   const getDimensions = () => {
@@ -243,7 +245,7 @@ export default function PlotterCalibration() {
     let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}mm" height="${height}mm" viewBox="0 0 ${width} ${height}">
   <rect width="${width}" height="${height}" fill="white"/>
-  <g stroke="black" stroke-width="0.1" fill="none">
+  <g stroke="black" stroke-width="${config.nibSize}" fill="none">
 `;
 
     // Header/Title group (can be easily hidden/removed)
@@ -568,6 +570,7 @@ export default function PlotterCalibration() {
                   <option value="A5">A5 (210×148mm)</option>
                   <option value="Letter">Letter (11×8.5")</option>
                   <option value="Tabloid">Tabloid (17×11")</option>
+                  <option value="22x30">22×30 (22×30")</option>
                 </select>
               </div>
 
@@ -685,6 +688,22 @@ export default function PlotterCalibration() {
                   min="5"
                   max="100"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Pen Nib Size (mm)</label>
+                <input
+                  type="number"
+                  step="0.05"
+                  value={config.nibSize}
+                  onChange={(e) => setConfig({ ...config, nibSize: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border rounded"
+                  min="0.05"
+                  max="2"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Sets the drawn line width to match your pen's nib
+                </p>
               </div>
 
               <div className="pt-2 border-t">
